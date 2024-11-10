@@ -49,3 +49,17 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.confirmation-modal{
+    position:fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color:slateblue;
+    padding: 20px;
+    border: 1px solid #ccc;    
+
+}
+    .confirmation-modal button{
+        margin-right: 10px
+    }

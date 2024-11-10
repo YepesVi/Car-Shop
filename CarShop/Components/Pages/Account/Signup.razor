@@ -1,0 +1,198 @@
+﻿@page "/signup"
+
+@rendermode InteractiveServer
+
+@using Entity
+
+@using CarShop.Service
+@using Entity.ViewModels
+@inject NavigationManager navigationManager
+@inject IUserService UserService
+@inject IPersonService personService
+@inject IAuxiliaryListsService AuxiliaryListsService
+
+<div class="card">
+
+    <div class="card-body">
+        <div class="row">
+
+            <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+
+
+                <EditForm Model="@registrationModel" OnValidSubmit="HandleValidSubmit"  FormName="signinForm">
+                    <DataAnnotationsValidator />
+
+
+                    <div class="mb-3 text-center flex-column">
+                        <img src="/Images/user.jpg" style="max-height:5rem " />
+                        <h3>Login</h3>
+                    </div>
+
+                    <h3>Sign Up</h3>
+
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <InputText @bind-Value="registrationModel.Email" class="form-control" placeholder="Email" />
+                        <ValidationMessage For="@(() => registrationModel.Email)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <InputText @bind-Value="registrationModel.Password" type="password" class="form-control" placeholder="Password" />
+                        <ValidationMessage For="@(() => registrationModel.Password)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <InputText @bind-Value="registrationModel.ComfirmedPassword" type="password" class="form-control" placeholder="Password" />
+                        <ValidationMessage For="@(() => registrationModel.ComfirmedPassword)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>User Name</label>
+                        <InputText @bind-Value="registrationModel.UserName" class="form-control" placeholder="User Name" />
+                        <ValidationMessage For="@(() => registrationModel.UserName)" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <InputText @bind-Value="registrationModel.Name" class="form-control" placeholder="Name" />
+                        <ValidationMessage For="@(() => registrationModel.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Phone</label>
+                        <InputNumber @bind-Value="registrationModel.Phone" class="form-control" placeholder="Email" />
+                        <ValidationMessage For="@(() => registrationModel.Phone)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>@*<font color="red">(*)</font>*@Tipo de Persona</label>
+                        <select @bind="registrationModel.DocumentType_id" class="form-select" title="required selection" required>
+                        <option value="">Select a document type</option>
+
+                            @if (documentTypes != null && documentTypes.Count > 0)
+                            {
+                                @foreach (var type in documentTypes)
+                                {
+                                    <!-- Asegúrate de usar comillas aquí -->
+                                    <option value="@type.Id">@type.DocumentType</option>
+                                }
+                            }
+                        </select>
+                        <ValidationMessage For="@(() => registrationModel.DocumentType_id)" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Document Number</label>
+                        <InputText @bind-Value="registrationModel.DocumentNumber" class="form-control" placeholder="Document" />
+                        <ValidationMessage For="@(() => registrationModel.DocumentNumber)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Address</label>
+                        <InputText @bind-Value="registrationModel.Address" class="form-control" placeholder="Address" />
+                        <ValidationMessage For="@(() => registrationModel.Address)" />
+                    </div>
+                    <div class="mb-3 text-center">
+                        <span class="text-danger">@errorMessage</span>
+                    </div>
+
+                    <div class="mb-3 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </EditForm>
+            </div>
+    
+        </div>
+     </div>
+</div>
+
+
+@code {
+
+    [SupplyParameterFromForm]
+    private SignupViewModel registrationModel { get; set; } = new();
+
+    List<DocumentTypes>? documentTypes;
+
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            documentTypes = (await AuxiliaryListsService.GetAllDocumentTypes()).ToList();
+        }
+        catch (Exception e)
+        {
+            errorMessage = $"An error occurred: {e.Message}";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var result = false;
+        try
+        {
+            if (registrationModel.Password.Equals(registrationModel.ComfirmedPassword))
+            {
+                User user = await UserService.GetUserByEmailAsync(registrationModel.Email);
+                if(user is null)
+                {
+                    if (long.TryParse(registrationModel.DocumentNumber, out long documentNumber))
+                    {
+                        var person = await personService.GetByDocumentAsync(documentNumber);
+                        if (person is null)
+                        {
+                            user = new User();
+                            Person person1 = new Person();
+                            setting(user, person1);
+                            result = await UserService.RegisterAsync(user, person1);
+                        }
+                        else
+                        {
+                            errorMessage = "The Document that you've written is currently being used, please try to login or change your Document";
+                        }
+
+                    }
+                    
+                }
+                else
+                {
+                    errorMessage = "The Email that you've written is currently being used, please try to login or change your Email";
+                }
+
+            }
+            else
+            {
+                errorMessage = "Please provide your password again, they aren't matching";
+            }
+
+
+        }
+        catch (Exception e)
+        {
+            errorMessage = $"An error occurred: {e.Message}";
+        }
+        if (result)
+        {
+            navigationManager.NavigateTo("/login", forceLoad: true);
+        }
+
+    }
+
+    private void setting(User user, Person person)
+    {
+        user.Role = "User";
+        user.Email = registrationModel.Email;
+        user.Name = registrationModel.UserName;
+        user.Password = registrationModel.Password;
+
+        person.Name = registrationModel.Name;
+        person.Phone = registrationModel.Phone;
+        person.Address = registrationModel.Address;
+        person.DocumentType_id = registrationModel.DocumentType_id;
+        person.DocumentNumber = registrationModel.DocumentNumber;
+
+    }
+
+}

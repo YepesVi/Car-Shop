@@ -1,0 +1,142 @@
+﻿@page "/login"
+
+@*rendermode InteractiveServer*@
+
+
+@using CarShop.Components.Layout
+@using Entity
+@using CarShop.Service
+@using System.Security.Claims
+@using Entity.ViewModels
+@using Microsoft.AspNetCore.Antiforgery
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject IUserService userService
+@*inject CustomAuthStateProvider AuthStateProvider*@
+@inject NavigationManager navigationManager
+@inject IHttpContextAccessor httpContextAccessor
+
+<div class="card">
+    <div  class="card-body">
+        <div class="row">
+            <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+                <EditForm Model="@model" OnValidSubmit="Authenticate" FormName="LoginForm">
+                    <DataAnnotationsValidator />
+
+
+
+                    <div class="mb-3 text-center flex-column">
+                        <img src="/Images/user.jpg" style="max-height:5rem " />
+                        <h3>Login</h3>
+                    </div>
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <InputText @bind-Value="model.Email" class="form-control" placeholder="Email" />
+                        <ValidationMessage For="() => model.Email" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <InputText @bind-Value="model.Password" type="password" class="form-control" placeholder="Password" />
+                        <ValidationMessage For="() => model.Password" />
+                    </div>
+
+                    <div class="mb-3 text-center">
+                        <span class="text-danger">@errorMessage</span>
+                    </div>
+                    <div class="mb-3 text-center">
+                        <span class="text-danger">@errorMessagen</span>
+                    </div>
+
+                    <div class="mb-3 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                </EditForm>
+             </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+
+
+    [SupplyParameterFromForm]
+    public LoginViewModel model { get; set; } = new();
+
+    private string? errorMessage;
+
+    private string? errorMessagen;
+
+    private async Task Authenticate()
+    {
+        //await AuthStateProvider.SignIn(model.Email, model.Password);
+
+
+
+
+        // navigationManager.NavigateTo("/cars", true);
+        /*        // Aquí obtienes el token de antifalsificación solo al hacer submit
+                                           string antiforgeryToken = antiforgery.GetAndStoreTokens(httpContextAccessor.HttpContext).RequestToken;
+                                           if (string.IsNullOrEmpty(antiforgeryToken))
+                                               {
+                                               errorMessage = "Antiforgery token is missing.";
+               return;
+               }
+
+               */
+
+        var result = false;
+        try
+        {
+            var user = await userService.GetUserByEmailAsync(model.Email);
+            if (user is null || !user.Password.Equals(model.Password))
+            {
+                errorMessage = "Invalid email or password";
+                return; // Evitar continuar si las credenciales son incorrectas
+            }
+            var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Name, user.Name),
+                        new Claim(ClaimTypes.Role, user.Role)
+                    };
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+            if (httpContextAccessor.HttpContext != null)
+            {
+                await httpContextAccessor.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                result = true;
+
+            }
+            else
+            {
+                errorMessage = "Unable to access HTTP context.";
+                Console.WriteLine("HttpContext is null.");
+            }
+
+        }
+        catch (NavigationException navEx)
+        {
+            errorMessagen = $"Navigation failed: {navEx.Message}";
+            Console.WriteLine(navEx.ToString());
+            // Aquí puedes manejar el error como quieras, por ejemplo, registrar o mostrar un mensaje
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        if (result)
+        {
+            navigationManager.NavigateTo("/", forceLoad: true);
+        }
+
+        /*   */
+
+
+
+
+    }
+
+}
+

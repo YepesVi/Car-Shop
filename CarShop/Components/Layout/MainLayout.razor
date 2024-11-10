@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -8,11 +9,21 @@
     <main>
         <div class="top-row px-4">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <AuthorizeView>
+                <NotAuthorized>
+                    <a href="/login">Login</a>
+                    <a href="/signup">Signup</a>
+                </NotAuthorized>
+                <Authorized>
+                    <a href="/logout">Logout</a>
+                </Authorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
             @Body
         </article>
+
     </main>
 </div>
 

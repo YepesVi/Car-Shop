@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -9,12 +12,32 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="CarShop.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+
+    <link href="css/material.min.css" rel="stylesheet">
+
+    <link href="_content/Blazorise/blazorise.css" rel="stylesheet" />
+    <link href="_content/Blazorise.Material/blazorise.material.css" rel="stylesheet" />
+    <link href="_content/Blazorise.Icons.FontAwesome/v6/css/all.min.css" rel="stylesheet">
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="css/captcha.css" rel="stylesheet" />
+
+    <RadzenTheme Theme="material" @rendermode="@RenderModeForPage" />
     <HeadOutlet />
 </head>
 
 <body>
     <Routes />
+
+    @code {
+        private IComponentRenderMode RenderModeForPage =>
+        HttpContextAccessor.HttpContext.Request.Path.StartsWithSegments("/login")
+        ? null // Modo estático para la página de login
+        : InteractiveServer; // Modo interactivo para otras páginas
+    }
+
     <script src="_framework/blazor.web.js"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
 </body>
 
 </html>
+

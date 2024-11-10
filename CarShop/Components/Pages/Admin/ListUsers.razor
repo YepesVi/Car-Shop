@@ -1,0 +1,129 @@
+﻿@page "/user-management"
+@using CarShop.Service
+@using Entity.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+
+@attribute [Authorize(Roles="Admin")]
+
+@inject NavigationManager navigationManager
+@inject DialogService DialogService
+@inject IUserService UserService
+
+@rendermode InteractiveServer
+
+
+<RadzenDataGrid TItem="UserPersonViewModel" Data="@userPersonViewModels"   AllowFiltering="true" 
+    AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true" 
+    PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"  ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or" 
+    SelectionMode="DataGridSelectionMode.Single" AllowColumnPicking="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="user.Id" Title="ID" Frozen="true" Width="60px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="user.Name" Title="User Name" Frozen="true" Width="100px" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="user.Role" Title="Role" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="user.Email" Title="Email" Width="160px" Frozen="true" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="person.Name" Title="Person Name" Width="160px"/>
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="person.DocumentNumber" Title="DocumentNumber" Width="160px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="person.Phone" Title="Phone" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Property="person.Address" Title="Address" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="UserPersonViewModel" Title="Actions">
+            <Template>
+                @{
+                    var currentUser = (UserPersonViewModel)@context; // Casting a UserPersonViewModel
+                }
+                <RadzenButton Icon="assignment_returned" Click="@(() => EditUser(currentUser))" ButtonStyle="ButtonStyle.Warning" />
+                <RadzenButton Icon="delete" Click="@(() => DeleteUser(currentUser))" ButtonStyle="ButtonStyle.Danger" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+<br />
+
+<div style="margin-bottom: 10px;">
+    <!-- Espacio entre el grid y el botón -->
+    <RadzenButton Click="@AddUser" Text="Add New" Icon="add_circle" ButtonStyle="ButtonStyle.Success" Style="width: 100%;" />
+</div>
+
+<Modal @ref="modalAlertDelete">
+    <ModalContent Size="ModalSize.Default" Centered="true">
+        <div style="background-color:lightsteelblue; border-radius: 10px;">
+            <ModalHeader style="    background-color:slateblue; color: white;font-size:small">
+                <ModalTitle>
+                    Delete confirmation
+                </ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+                <br>
+                Are you sure you want to delete this user?
+                remember that if there's information about this user as person or mechanic, those will be deleted
+            </ModalBody>
+            <ModalFooter style="background-color:lightsteelblue;">
+                <Button Color="Color.Danger" Outline Clicked="@Delete">Delete</Button>
+                <Button Color="Color.Warning" Outline Clicked="@cancel" >Cancel</Button>
+            </ModalFooter>
+        </div>
+    </ModalContent>
+</Modal>
+
+
+@code {
+    private List<UserPersonViewModel> userPersonViewModels = new List<UserPersonViewModel>();
+
+    private bool showComfrimDelete = false;
+
+    private int deleteId;
+
+    private Modal? modalAlertDelete = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers(); // Cargar todos los usuarios al inicializar
+    }
+
+    private async Task LoadUsers()
+    {
+        userPersonViewModels = await UserService.GetAllUsersWithPersonsAsync(); // Obtener todos los usuarios con personas
+        StateHasChanged(); // Forzar actualización del estado si es necesario
+    }
+
+    private void EditUser(UserPersonViewModel viewModel)
+    {
+        navigationManager.NavigateTo($"/manage-user?userId={viewModel.user.Id}");
+        Console.WriteLine($"Editing user: {viewModel.user.Email}");
+
+    }
+
+    private void DeleteUser(UserPersonViewModel viewModel)
+    {
+        deleteId = viewModel.user.Id;
+        modalAlertDelete.Show();
+    }
+
+
+    private async Task Delete()
+    {
+        await UserService.DeleteUserByIdAsync(deleteId);
+        await LoadUsers(); // Recargar la lista después de eliminar
+        modalAlertDelete.Hide(); // Cerrar el modal después de confirmar la eliminación
+    }
+
+    private void cancel()
+    {
+        modalAlertDelete.Hide();
+    }
+
+    private void closeConfirmation()
+    {
+        modalAlertDelete.Hide();
+        OnInitializedAsync();
+    }
+
+    private void AddUser()
+    {
+        navigationManager.NavigateTo("/manage-user", forceLoad: true);
+        Console.WriteLine("Adding new user");
+        // Aquí podrías navegar a un formulario de creación o abrir un diálogo.
+    }
+}

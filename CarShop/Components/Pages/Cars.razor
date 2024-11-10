@@ -5,8 +5,11 @@
 @inject ICarService carService
 @inject NavigationManager NavigationManager
 
+@attribute [Authorize]
+
 @using CarShop.Service
 @using Entity
+@using Microsoft.AspNetCore.Authorization
 
 @if (cars == null)
 {
@@ -25,19 +28,17 @@ else
             @foreach (var car in cars)
             {
                 <tr>
-                    <td>@car.PLATE</td>
-                    <td>@car.BRAND</td>
+                    <td>@car.Id</td>
+                    <td>@car.Plate</td>
+                    <td>@car.Brand</td>
+                    <td>@car.Model</td>
+                    <td>@car.Year</td>
    
                 </tr>
             }
         </tbody>
     </table>
-    <ul>
-        @foreach (var car in cars)
-        {
-            <li>@car.PLATE - @car.BRAND</li>
-        }
-    </ul>
+   
 }
 
 @code {

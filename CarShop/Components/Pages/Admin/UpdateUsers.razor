@@ -1,0 +1,378 @@
+﻿@page "/manage-user"
+@using CarShop.Service
+@using Entity
+@using Entity.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager navigationManager
+@inject IUserService userService
+@inject IPersonService personService
+@inject IMechanicService mechanicService
+@inject IAuxiliaryListsService auxiliaryListsService
+@rendermode InteractiveServer
+
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+                <EditForm Model="@registrationModel" OnValidSubmit="HandleValidSubmit" FormName="updateForm">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3 text-center flex-column">
+                        <h3>@title</h3>
+                    </div>
+
+                    <!-- Campos para actualizar información del usuario -->
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <InputText @bind-Value="registrationModel.Email" class="form-control" placeholder="Email" />
+                        <ValidationMessage For="@(() => registrationModel.Email)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <InputText @bind-Value="registrationModel.Password" type="password" class="form-control" placeholder="Password" />
+                        <ValidationMessage For="@(() => registrationModel.Password)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>User Name</label>
+                        <InputText @bind-Value="registrationModel.UserName" class="form-control" placeholder="User Name" />
+                        <ValidationMessage For="@(() => registrationModel.UserName)" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <InputText @bind-Value="registrationModel.Name" class="form-control" placeholder="Name" />
+                        <ValidationMessage For="@(() => registrationModel.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Phone</label>
+                        <InputNumber @bind-Value="registrationModel.Phone" class="form-control" placeholder="Email" />
+                        <ValidationMessage For="@(() => registrationModel.Phone)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>@*<font color="red">(*)</font>*@Tipo de Persona</label>
+                        <select @bind="registrationModel.DocumentType_id" class="form-select" title="required selection" required>
+                            <option value="">Select a document type</option>
+
+                            @if (documentTypes != null && documentTypes.Count > 0)
+                            {
+                                @foreach (var type in documentTypes)
+                                {
+                                    <!-- Asegúrate de usar comillas aquí -->
+                                    <option value="@type.Id">@type.DocumentType</option>
+                                }
+                            }
+                        </select>
+                        <ValidationMessage For="@(() => registrationModel.DocumentType_id)" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Document Number</label>
+                        <InputText @bind-Value="registrationModel.DocumentNumber" class="form-control" placeholder="Document" />
+                        <ValidationMessage For="@(() => registrationModel.DocumentNumber)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Address</label>
+                        <InputText @bind-Value="registrationModel.Address" class="form-control" placeholder="Address" />
+                        <ValidationMessage For="@(() => registrationModel.Address)" />
+                    </div>
+
+
+                    <div class="mb-3">
+                        <label>Role</label>
+                        <select @bind="registrationModel.Role" class="form-select">
+                            <option value="">Select Role</option>
+                            @if (roles != null && roles.Count > 0)
+                            {
+                                @foreach (var role in roles)
+                                {
+                                    <option value="@role.Role">@role.Role</option>
+                                }
+                            }
+                        </select>
+                        <ValidationMessage For="@(() => registrationModel.Role)" />
+                    </div>
+
+                    @if (registrationModel.Role == "Mechanic")
+                    {
+                        <div class="mb-3">
+                            <label>Specialization</label>
+                            <select @bind="registrationModel.Specialization_id" class="form-select">
+                                <option value="">Select a car category</option>
+                                @if (specializations != null && specializations.Count > 0)
+                                {
+                                    @foreach (var specialization in specializations)
+                                    {
+                                        <option value="@specialization.Id">@specialization.Specialization</option>
+                                    }
+                                }
+                            </select>
+                            <ValidationMessage For="@(() => registrationModel.Specialization_id)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Car Category</label>
+                            <select @bind="registrationModel.CarCategory_id" class="form-select">
+                                <option value="">Select a car category</option>
+                                @if (carCategories != null && carCategories.Count > 0)
+                                {
+                                    @foreach (var category in carCategories)
+                                    {
+                                        <option value="@category.Id">@category.Category</option>
+                                    }
+                                }
+                            </select>
+                            <ValidationMessage For="@(() => registrationModel.CarCategory_id)" />
+                        </div>
+                    }
+
+                    <div class="mb-3 text-center">
+                        <span class="text-danger">@errorMessage</span>
+                    </div>
+
+                    <!-- Botón de actualización -->
+                    <div class="mb-3 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">@title</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private UpdateUserViewModel registrationModel { get; set; } = new();
+    private List<CarCategory>? carCategories;
+    private List<Specializations>? specializations;
+    private List<DocumentTypes> documentTypes;
+    private List<Roles>? roles;
+    private string errorMessage, title;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Obtener el ID del query string
+        var uri = navigationManager.ToAbsoluteUri(navigationManager.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+
+
+        if (query.TryGetValue("userId", out var userIdValue) && int.TryParse(userIdValue, out var userId))
+        {
+            // Cargar datos del usuario a editar
+            var user = await userService.GetUserByIdAsync(userId);
+            if (user != null)
+            {
+                title = "Update User";
+                registrationModel.Id = user.Id;
+                registrationModel.Email = user.Email;
+                registrationModel.Password = user.Password;
+                registrationModel.UserName = user.Name;
+                registrationModel.Role = user.Role;
+
+                var person = await personService.GetByUserIdAsync(user.Id);
+                if (person != null)
+                {
+                    registrationModel.Name = person.Name;
+                    registrationModel.DocumentType_id = person.DocumentType_id;
+                    registrationModel.DocumentNumber = person.DocumentNumber;
+                    registrationModel.Phone = person.Phone;
+                    registrationModel.Address = person.Address;
+
+                    if (user.Role == "Mechanic")
+                    {
+                        var mechanicDetails = await mechanicService.GetByIdAsync(person.Id);
+                        if (mechanicDetails != null)
+                        {
+                            registrationModel.Specialization_id = mechanicDetails.Specialization_id;
+                            registrationModel.CarCategory_id = mechanicDetails.CarCategory_id;
+                        }
+                    }
+                }
+
+
+            }
+
+        }
+        else
+        {
+            title = "Add User";
+            registrationModel.Id = 0;
+        }
+        roles = (await auxiliaryListsService.GetAllRoles()).ToList();
+        documentTypes = (await auxiliaryListsService.GetAllDocumentTypes()).ToList();
+        carCategories = (await auxiliaryListsService.GetAllCarCategories()).ToList();
+        specializations = (await auxiliaryListsService.GetAllSpecializations()).ToList();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+
+        try
+        {
+            User user;
+            Person person;
+            bool result;
+            if (registrationModel.Phone.ToString().Length<11)
+            {
+                if (title == "Update User")
+                {
+                    user = await userService.GetUserByIdAsync(registrationModel.Id);
+                    if (user.Email != registrationModel.Email)
+                    {
+                        user = await userService.GetUserByEmailAsync(registrationModel.Email);
+                        if (user is null)
+                        {
+                            person = await personService.GetByUserIdAsync(registrationModel.Id);
+                            if (person.DocumentNumber != registrationModel.DocumentNumber)
+                            {
+                                if (long.TryParse(registrationModel.DocumentNumber, out long documentNumber))
+                                {
+                                    person = await personService.GetByDocumentAsync(documentNumber);
+                                    if (person is null)
+                                    {
+                                        if (registrationModel.Role != "Mechanic")
+                                        {
+                                            registrationModel.Specialization_id = null;
+                                            registrationModel.CarCategory_id = null;
+                                        }
+                                        result = await userService.UpdateUserAsync(registrationModel);
+                                        if (result)
+                                        {
+                                            navigationManager.NavigateTo("/user-management", forceLoad: true); // Redirigir a la lista de usuarios
+                                        }
+                                        else
+                                        {
+                                            errorMessage = "A problem occured while trying to update the user";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        errorMessage = "The Document that you've written is currently being used, please try to login or change your Document";
+                                    }
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            errorMessage = "The Email that you've written is currently being used, please try to login or change your Email";
+                        }
+                    }
+                    else
+                    {
+                        person = await personService.GetByUserIdAsync(registrationModel.Id);
+                        if (person.DocumentNumber != registrationModel.DocumentNumber)
+                        {
+                            if (long.TryParse(registrationModel.DocumentNumber, out long documentNumber))
+                            {
+                                person = await personService.GetByDocumentAsync(documentNumber);
+                                if (person is null)
+                                {
+                                    if (registrationModel.Role != "Mechanic")
+                                    {
+                                        registrationModel.Specialization_id = null;
+                                        registrationModel.CarCategory_id = null;
+                                    }
+                                    result = await userService.UpdateUserAsync(registrationModel);
+                                    if (result)
+                                    {
+                                        navigationManager.NavigateTo("/user-management", forceLoad: true); // Redirigir a la lista de usuarios
+                                    }
+                                    else
+                                    {
+                                        errorMessage = "A problem occured while trying to update the user";
+                                    }
+                                }
+                                else
+                                {
+                                    errorMessage = "The Document that you've written is currently being used, please try to login or change your Document";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (registrationModel.Role != "Mechanic")
+                            {
+                                registrationModel.Specialization_id = null;
+                                registrationModel.CarCategory_id = null;
+                            }
+                            result = await userService.UpdateUserAsync(registrationModel);
+                            if (result)
+                            {
+                                navigationManager.NavigateTo("/user-management", forceLoad: true); // Redirigir a la lista de usuarios
+                            }
+                            else
+                            {
+                                errorMessage = "A problem occured while trying to update the user";
+                            }
+                        }
+                    }
+
+
+
+                    // Lógica para actualizar el usuario
+
+                }
+                else
+                {
+                    if (title == "Add User")
+                    {
+                        user = await userService.GetUserByEmailAsync(registrationModel.Email);
+                        if (user is null)
+                        {
+                            if (long.TryParse(registrationModel.DocumentNumber, out long documentNumber))
+                            {
+                                person = await personService.GetByDocumentAsync(documentNumber);
+                                if (person is null)
+                                {
+                                    result = await userService.AddUserAsync(registrationModel);
+                                    if (result)
+                                    {
+                                        navigationManager.NavigateTo("/user-management", forceLoad: true);
+                                    }
+                                    else
+                                    {
+                                        errorMessage = "A problem occured while trying to create the user";
+                                    }
+                                }
+                                else
+                                {
+                                    errorMessage = "The Document that you've written is currently being used, please try to login or change your Document";
+                                }
+
+                            }
+
+                        }
+                        else
+                        {
+                            errorMessage = "The Email that you've written is currently being used, please try to login or change your Email";
+                        }
+
+                    }
+                    else
+                    {
+                        errorMessage = "It was imposible to manage this user";
+                    }
+                }
+            }
+            else
+            {
+                errorMessage = "The phone that you provided is unvalid please use maximum 10 numbers";
+            }
+
+        }
+        catch(Exception e)
+        {
+            errorMessage = $"An error occurred: {e.Message}";
+        }
+
+
+    }
+
+}
