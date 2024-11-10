@@ -1,10 +1,23 @@
 using CarShop.Components;
+using CarShop.Service;
+using Microsoft.Data.SqlClient;
+using Repository;
+using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddScoped<ICars, CarsDTO>();
+builder.Services.AddScoped<ICarService, CarService>();
+
+
+//conexion BD
+//builder.Services.AddSingleton<IDbConnection>((sp) => new OracleConnection(builder.Configuration.GetConnectionString("CONEXIONSQL")));
+builder.Services.AddSingleton<IDbConnection>((sp) => new SqlConnection(builder.Configuration.GetConnectionString("CONEXIONSQL")));
+
 
 var app = builder.Build();
 

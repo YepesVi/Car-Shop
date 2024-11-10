@@ -1,0 +1,51 @@
+﻿@page "/cars"
+
+@rendermode InteractiveServer
+
+@inject ICarService carService
+@inject NavigationManager NavigationManager
+
+@using CarShop.Service
+@using Entity
+
+@if (cars == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th> Plate</th>
+                <th> Brand </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var car in cars)
+            {
+                <tr>
+                    <td>@car.PLATE</td>
+                    <td>@car.BRAND</td>
+   
+                </tr>
+            }
+        </tbody>
+    </table>
+    <ul>
+        @foreach (var car in cars)
+        {
+            <li>@car.PLATE - @car.BRAND</li>
+        }
+    </ul>
+}
+
+@code {
+    private IEnumerable<Car>? cars;
+
+    protected override async Task OnInitializedAsync() => cars = await carService.GetAllCars();
+
+
+
+
+}
