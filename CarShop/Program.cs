@@ -58,7 +58,12 @@ builder.Services
     .AddBootstrapProviders()
    .AddFontAwesomeIcons();
 
+
 //app services
+builder.Services.AddScoped<IService, ServiceDAO>();
+builder.Services.AddScoped<IPart, PartDAO>();
+builder.Services.AddScoped<ILabor, LaborDAO>();
+builder.Services.AddScoped<IServicesService, ServicesService>();
 builder.Services.AddScoped<ICars, CarsDAO>();
 builder.Services.AddScoped<IPerson_Car, Person_CarDAO>();
 builder.Services.AddScoped<ICarService, CarService>();
@@ -89,6 +94,13 @@ builder.Services.AddHttpContextAccessor(); // Asegúrate de agregar esto
 //builder.Services.AddSingleton<IDbConnection>((sp) => new OracleConnection(builder.Configuration.GetConnectionString("CONEXIONSQL")));
 builder.Services.AddSingleton<IDbConnection>((sp) => new SqlConnection(builder.Configuration.GetConnectionString("CONEXIONSQL")));
 
+var emailConfig = builder.Configuration
+.GetSection("EmailConfiguration")
+.Get<EmailConfiguration>();
+builder.Services.AddSingleton(emailConfig);
+
+
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 

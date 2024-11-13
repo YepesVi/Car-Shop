@@ -8,9 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BlazorCaptcha" Version="1.6.0" />
     <PackageReference Include="Blazorise" Version="1.6.2" />
     <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.6.2" />
     <PackageReference Include="Blazorise.Material" Version="1.6.2" />
+    <PackageReference Include="ClosedXML" Version="0.104.1" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.10" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.0-preview2.24304.8" />
     <PackageReference Include="Radzen.Blazor" Version="5.5.3" />
@@ -24,6 +26,12 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\Images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Components\Pages\Mechanic\ManageCarServices.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
   </ItemGroup>
 
 </Project>

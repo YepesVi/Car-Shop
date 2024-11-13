@@ -1,0 +1,118 @@
+﻿@page "/manage-Car-Services"
+@using CarShop.Service
+@using Entity
+@using Entity.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@using Radzen
+@using Radzen.Blazor
+@using System.Security.Claims
+
+@attribute [Authorize(Roles = "Mechanic")]
+
+@inject NavigationManager navigationManager
+@inject DialogService DialogService
+@inject IUserService UserService
+@inject IServicesService SevicesSevice
+@inject IMechanicService MechanicService
+@inject IPersonService PersonService
+@rendermode InteractiveServer
+
+
+<RadzenDataGrid TItem="ServicePlateViewModel" Data="@ServicesViewModels" AllowFiltering="true"
+                AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
+                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                SelectionMode="DataGridSelectionMode.Single" AllowColumnPicking="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="Id" Title="ID" Frozen="true" Width="60px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="Plate" Title="Plate" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="EntranceDate" Title="Entrance Date" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="FinishedDate" Title="Finished Date" Width="160px" Frozen="true" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="TotalPrice" Title="Total Price" Width="160px" />
+
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Title="Actions">
+            <Template>
+                @{
+                    var currentService = (ServicePlateViewModel)@context; // Casting a UserPersonViewModel
+                }
+                <RadzenButton Icon="input" Click="@(() => seeDetails(currentService))" ButtonStyle="ButtonStyle.Success" />
+               
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+<br />
+<div class="mb-3 text-center">
+    <span class="text-danger">@errorMessage</span>
+</div>
+
+
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+
+    private List<ServicePlateViewModel> ServicesViewModels = new List<ServicePlateViewModel>();
+
+    private Modal? modalAlertFinished = null!;
+    private string errorMessage;
+    private int carId, mechanicId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServices(); // Cargar todos los usuarios al inicializar
+    }
+
+    private async Task LoadServices()
+    {
+        var authenticationState = await authenticationStateTask;
+        var user = authenticationState.User;
+        var email = user.FindFirst(ClaimTypes.Email)?.Value;
+
+        // Aquí puedes usar el email para cargar datos del usuario
+        var userDetails = await UserService.GetUserByEmailAsync(email);
+        if (userDetails != null)
+        {
+            var person = await PersonService.GetByUserIdAsync(userDetails.Id);
+            if (person != null)
+            {
+                var mechanic = await MechanicService.GetByIdAsync(person.Id);
+                if(mechanic != null)
+                {
+                    mechanicId = mechanic.Id_Person;
+                    ServicesViewModels = (await SevicesSevice.GetServicePlateViewModelsByCarCategoryAsync(mechanic.CarCategory_id)).ToList();
+                    if (ServicesViewModels is null || !ServicesViewModels.Any())
+                    {
+                        errorMessage = "There isn't any service related to your category";
+                    }
+                }
+                else
+                {
+                    errorMessage = "There was a problem while trying to charge the services that you can do";
+                }
+            }
+            else
+            {
+                errorMessage = "There was a problem while trying to charge the services that you can do";
+            }
+        }
+        else
+        {
+            errorMessage = "There was a problem while trying to charge the services that you can do";
+        }
+        StateHasChanged(); // Forzar actualización del estado si es necesario
+    }
+
+
+    private void seeDetails(ServicePlateViewModel viewModel)
+    {
+        navigationManager.NavigateTo($"/manage-Car-Services-Details?ServiceId={viewModel.Id}&MechanicId={mechanicId}");
+    }
+
+   
+   
+
+   
+}

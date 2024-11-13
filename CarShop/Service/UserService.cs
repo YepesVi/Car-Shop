@@ -116,7 +116,7 @@ namespace CarShop.Service
                 {
                     mechanic.CarCategory_id = (int)model.CarCategory_id;
                     mechanic.Specialization_id = (int)model.Specialization_id;
-                    var mechanicUpdated = await _IMechanic.AddAsync(mechanic);
+                    var mechanicUpdated = await _IMechanic.UpdateAsync(mechanic);
                     if (!mechanicUpdated) { return false; }
                 }
             }

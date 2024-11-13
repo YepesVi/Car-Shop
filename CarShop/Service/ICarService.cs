@@ -15,9 +15,12 @@ namespace CarShop.Service
         Task<bool> AddCarWithOwner(int Person_id, Car car);
 
         Task<Car> GetCarByPlateAsync(string plate);
+        Task<Car> GetCarByIdAsync(int id);
 
+        Task<int> GetOwnerIdByCarIdAsync(int carId);
         Task<bool> updatePersonCar(int person_id, int car_id);
 
         Task<bool> deletePersonCar(int car_id);
+        Task<decimal> GetCategoryByCarIdAsync(int car_id);
     }
 }

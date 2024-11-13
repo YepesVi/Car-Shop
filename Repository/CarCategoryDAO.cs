@@ -23,5 +23,10 @@ namespace Repository
 
             return await _dbconnection.QueryAsync<CarCategory>(sql, new { });
         }
+        public async Task<CarCategory> GetByIdAsync(int id)
+        {
+            var sql = @"SELECT * FROM CarCategories WHERE Id = @Id";
+            return await _dbconnection.QuerySingleOrDefaultAsync<CarCategory>(sql, new { Id = id });
+        }
     }
 }

@@ -1,0 +1,198 @@
+﻿@page "/Car-Services-Details"
+@using CarShop.Service
+@using Entity
+@using Entity.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@using Radzen
+@using Radzen.Blazor
+@using ClosedXML.Excel
+
+@attribute [Authorize(Roles = "User")]
+
+@inject NavigationManager navigationManager
+@inject DialogService DialogService
+@inject IUserService UserService
+@inject IServicesService SevicesSevice
+@inject ICarService CarService
+@inject IJSRuntime JsService
+@rendermode InteractiveServer
+
+
+
+<RadzenDataGrid TItem="ServicePlateViewModel" Data="@ServicesViewModels" 
+                AllowColumnResize="true" AllowAlternatingRows="false"  PageSize="5" AllowPaging="true"
+                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" ColumnWidth="200px" 
+                SelectionMode="DataGridSelectionMode.Single" >
+    <Columns>
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="Id" Title="ID" Frozen="true" Width="60px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="Plate" Title="Plate" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="EntranceDate" Title="Entrance Date" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="FinishedDate" Title="Finished Date" Width="160px" Frozen="true" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="TotalPrice" Title="Total Price" Width="160px" />
+
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Title="Actions">
+            <Template>
+                @{
+                    var currentService = (ServicePlateViewModel)@context; // Casting a UserPersonViewModel
+                }
+                <RadzenButton Icon="description" Click="@(() => ExecelExport(currentService))" ButtonStyle="ButtonStyle.Success" />
+
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6" style=" padding: 20px;">
+            <RadzenDataGrid TItem="Part" Data="@parts" AllowFiltering="true"
+                            AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
+                            PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" ColumnWidth="100px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                            SelectionMode="DataGridSelectionMode.Single" AllowColumnPicking="true">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Part" Property="Id" Title="ID" Frozen="true" Width="60px" TextAlign="TextAlign.Center" />
+                    <RadzenDataGridColumn TItem="Part" Property="Name" Title="Name" Frozen="true" Width="70px" TextAlign="TextAlign.Center" />
+                    <RadzenDataGridColumn TItem="Part" Property="Price" Title="Price" Frozen="true" Width="70px" TextAlign="TextAlign.Center" />
+                    <RadzenDataGridColumn TItem="Part" Property="Quantity" Title="Quantity" Frozen="true" Width="70px" TextAlign="TextAlign.Center" />
+                   
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+        <div class="col-md-6 " style=" padding: 20px;">
+            <RadzenDataGrid TItem="Labor" Data="@labors" AllowFiltering="true"
+                            AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
+                            PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" ColumnWidth="100px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                            SelectionMode="DataGridSelectionMode.Single" AllowColumnPicking="true">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Labor" Property="Id" Title="ID" Frozen="true" Width="60px" TextAlign="TextAlign.Center" />
+                    <RadzenDataGridColumn TItem="Labor" Property="Description" Title="Description" Frozen="true" Width="70px" TextAlign="TextAlign.Center" />
+                    <RadzenDataGridColumn TItem="Labor" Property="HoursWorked" Title="HoursWorked" Frozen="true" Width="70px" TextAlign="TextAlign.Center" />
+             
+
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+</div>
+
+
+<br />
+<div class="mb-3 text-center">
+    <span class="text-danger">@errorMessage</span>
+</div>
+
+
+
+@code {
+    private ServicePlateViewModel ServicesViewModel = new ServicePlateViewModel();
+    private List<ServicePlateViewModel> ServicesViewModels = new List<ServicePlateViewModel>();
+    private List<Part> parts = new List<Part>();
+    private List<Labor> labors = new List<Labor>();
+
+    private Modal? modalAlertDelete = null!;
+    private string errorMessage;
+    private int serviceId;
+    private decimal Category;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServices(); // Cargar todos los usuarios al inicializar
+        StateHasChanged(); 
+    }
+
+    private async Task LoadServices()
+    {
+        // Obtener el ID del query string
+        var uri = navigationManager.ToAbsoluteUri(navigationManager.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("ServiceId", out var ServiceIdValue) && int.TryParse(ServiceIdValue, out var ServiceId))
+        {
+            serviceId = ServiceId;
+            var service = await SevicesSevice.GetServicesByIdAsync(serviceId);
+            ServicesViewModels = (await SevicesSevice.GetServiceWithCarPlateByServiceIdAsync(serviceId)).ToList();
+            if (ServicesViewModel is null)
+            {
+                errorMessage = "There isn't any service related to this car";
+            }
+            else
+            {
+
+                parts = (await SevicesSevice.GetAllPartsByServiceAsync(serviceId)).ToList();
+                labors = (await SevicesSevice.GetAllLaborsByServiceAsync(serviceId)).ToList();
+
+                Category = await CarService.GetCategoryByCarIdAsync(service.Car_id);
+            }
+        }
+        else
+        {
+            errorMessage = "There was an unexpected problem, please try later";
+        }
+
+    }
+
+    private async Task ExecelExport(ServicePlateViewModel viewModel)
+    {
+        using(var book = new XLWorkbook())
+        {
+            IXLWorksheet sheet = book.Worksheets.Add("Service");
+            sheet.Cell(1, 1).Value = "Plate";
+            sheet.Cell(1, 2).Value = "Entrance Date";
+            sheet.Cell(1, 3).Value = "Finished Date";
+            sheet.Cell(1, 4).Value = "Price per hour";
+            sheet.Cell(1, 5).Value = "Total Price";
+
+
+            for (int row = 0; row < ServicesViewModels.Count; row++)
+            {
+                sheet.Cell(row + 2 , 1).Value = ServicesViewModels[row].Plate;
+                sheet.Cell(row + 2, 2).Value = ServicesViewModels[row].EntranceDate.ToString();
+                sheet.Cell(row + 2, 3).Value = ServicesViewModels[row].FinishedDate.ToString();
+                sheet.Cell(row + 2, 4).Value = Category;
+                sheet.Cell(row + 2, 5).Value = ServicesViewModels[row].TotalPrice;
+            }
+            sheet.Cell(4, 2).Value = "Parts";
+            sheet.Cell(5, 1).Value = "Name";
+            sheet.Cell(5, 2).Value = "Price";
+            sheet.Cell(5, 3).Value = "Quantity";
+            for (int row = 0; row < parts.Count; row++)
+            {
+                sheet.Cell(row + 6, 1).Value = parts[row].Name;
+                sheet.Cell(row + 6, 2).Value = parts[row].Price;
+                sheet.Cell(row + 6, 3).Value = parts[row].Quantity;
+
+            }
+
+            sheet.Cell(4, 5).Value = "labor";
+            sheet.Cell(5, 5).Value = "Description";
+            sheet.Cell(5, 6).Value = "Hours Worked";
+
+            for (int row = 0; row < labors.Count; row++)
+            {
+                sheet.Cell(row + 6, 5).Value = labors[row].Description;
+                sheet.Cell(row + 6, 6).Value = labors[row].HoursWorked;
+
+
+            }
+            using(var memory = new MemoryStream())
+            {
+                book.SaveAs(memory);
+                var excelName = string.Concat("Report ", viewModel.Plate,"  " ,viewModel.FinishedDate, ".xlsx");
+                await JsService.InvokeAsync<object>(
+                    "DownloadExcel",
+                    excelName,
+                    Convert.ToBase64String(memory.ToArray())
+            );
+            }
+
+        }
+    }
+
+
+
+
+
+
+
+
+}

@@ -123,5 +123,38 @@ namespace CarShop.Service
         {
             return await _ICars.UpdateCarAsync(car);
         }
+
+        public async Task<Car> GetCarByIdAsync(int id)
+        {
+            return await _ICars.GetCarByIdAsync(id);
+        }
+
+        public async Task<decimal> GetCategoryByCarIdAsync(int car_id)
+        {
+            var car = await _ICars.GetCarByIdAsync(car_id);
+            if (car == null)
+            {
+                return 0; // O lanzar una excepción si prefieres
+            }
+
+            // Obtener la categoría del coche usando el ID de la categoría
+            var category = await _CarCategory.GetByIdAsync(car.CarCategory_id);
+
+            // Retornar el nombre de la categoría o null si no se encuentra
+            return category.LaborPriceHour; // Asegúrate de que 'Category' es la propiedad correcta que contiene el nombre
+        }
+
+        public async Task<int> GetOwnerIdByCarIdAsync(int carId)
+        {
+            var personCar= await _Person.GetPersonCarByCarIdAsync(carId);
+            if (personCar == null)
+            {
+                return -1;
+            }
+            else
+            {
+                return personCar.Person_id;
+            }
+        }
     }
 }

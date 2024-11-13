@@ -10,6 +10,7 @@ namespace Repository
     public interface ICarCategory
     {
         Task<IEnumerable<CarCategory>> GetAllCategoriesAsync();
+        Task<CarCategory> GetByIdAsync(int id);
 
     }
 }

@@ -1,0 +1,93 @@
+﻿@page "/Car-Services"
+@using CarShop.Service
+@using Entity
+@using Entity.ViewModels
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.WebUtilities
+@using Radzen
+@using Radzen.Blazor
+
+@attribute [Authorize(Roles = "User")]
+
+@inject NavigationManager navigationManager
+@inject DialogService DialogService
+@inject IUserService UserService
+@inject IServicesService SevicesSevice
+@rendermode InteractiveServer
+
+
+<RadzenDataGrid TItem="ServicePlateViewModel" Data="@ServicesViewModels" AllowFiltering="true"
+                AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
+                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                SelectionMode="DataGridSelectionMode.Single" AllowColumnPicking="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="Id" Title="ID" Frozen="true" Width="60px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="Plate" Title="Plate" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="EntranceDate" Title="Entrance Date" Frozen="true" Width="100px" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="FinishedDate" Title="Finished Date" Width="160px" Frozen="true" TextAlign="TextAlign.Center" />
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Property="TotalPrice" Title="Total Price" Width="160px" />
+
+        <RadzenDataGridColumn TItem="ServicePlateViewModel" Title="Actions">
+            <Template>
+                @{
+                    var currentService = (ServicePlateViewModel)@context; // Casting a UserPersonViewModel
+                }
+                <RadzenButton Icon="input" Click="@(() => seeDetails(currentService))" ButtonStyle="ButtonStyle.Success" />
+               
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+<br />
+<div class="mb-3 text-center">
+    <span class="text-danger">@errorMessage</span>
+</div>
+
+
+
+@code {
+    private List<ServicePlateViewModel> ServicesViewModels = new List<ServicePlateViewModel>();
+
+    private Modal? modalAlertDelete = null!;
+    private string errorMessage;
+    private int carId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServices(); // Cargar todos los usuarios al inicializar
+    }
+
+    private async Task LoadServices()
+    {
+        // Obtener el ID del query string
+        var uri = navigationManager.ToAbsoluteUri(navigationManager.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("CarId", out var CarIdValue) && int.TryParse(CarIdValue, out var CarId))
+        {
+            carId = CarId;
+            ServicesViewModels = (await SevicesSevice.GetServiceWithCarPlateByCarIdAsync(CarId)).ToList();
+            if (ServicesViewModels is null || !ServicesViewModels.Any())
+            {
+                errorMessage = "There isn't any service related to this car";
+            }
+        }
+        else
+        {
+            errorMessage = "There was an unexpected problem, please try later";
+        }
+        StateHasChanged(); // Forzar actualización del estado si es necesario
+    }
+
+
+    private void seeDetails(ServicePlateViewModel viewModel)
+    {
+        navigationManager.NavigateTo($"/Car-Services-Details?ServiceId={viewModel.Id}");
+    }
+
+   
+   
+
+   
+}

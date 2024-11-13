@@ -19,5 +19,8 @@ namespace Entity
         [Required(ErrorMessage = "please provide an Category")]
         [Display(Name = "Category Id")]
         public int CarCategory_id { get; set; }
+
+
+
     }
 }

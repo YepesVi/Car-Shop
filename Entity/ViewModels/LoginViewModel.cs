@@ -11,5 +11,9 @@ namespace Entity.ViewModels
         [Required(AllowEmptyStrings = false, ErrorMessage = "please provide a Password")]
         public string? Password { get; set; }
 
+        [Required(AllowEmptyStrings = false, ErrorMessage = "please writre the captcha")]
+        public string? Captcha { get; set; }
+
+        public string? CaptchaCode { get; set; }
     }
 }

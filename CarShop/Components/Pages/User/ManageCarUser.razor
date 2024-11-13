@@ -14,6 +14,7 @@
 @inject IUserService UserService
 @inject IPersonService PersonService
 @inject ICarService CarService
+@inject IServicesService SevicesSevice
 @inject IAuxiliaryListsService auxiliaryListsService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -38,6 +39,8 @@
                 }
                 <RadzenButton Icon="assignment_returned" Click="@(() => EditCar(currentCar))" ButtonStyle="ButtonStyle.Warning" />
                 <RadzenButton Icon="delete" Click="@(() => DeleteCar(currentCar))" ButtonStyle="ButtonStyle.Danger" />
+                <RadzenButton Icon="list" Click="@(() => ServiceSent(currentCar))" ButtonStyle="ButtonStyle.Dark" />
+                <RadzenButton Icon="input" Click="@(() => SendService(currentCar))" ButtonStyle="ButtonStyle.Success" />
             </Template>
         </RadzenDataGridColumn>
     </Columns>
@@ -182,6 +185,52 @@
     </ModalContent>
 </Modal>
 
+<Modal @ref="modalServiceAlert">
+    <ModalContent Size="ModalSize.Default" Centered="true">
+        <div style="background-color:lightsteelblue; border-radius: 10px;">
+            <ModalHeader style="    background-color:slateblue; color: white;font-size:small">
+                <ModalTitle>
+                    Alert
+                </ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+                <br>
+                
+                <div class="mb-3 text-center">
+                    <span >@errorMessage</span>
+                </div>
+            </ModalBody>
+            <ModalFooter style="background-color:lightsteelblue;">
+                <Button Color="Color.Danger" Outline Clicked="@ServiceSent">Yes</Button>
+                <Button Color="Color.Warning" Outline Clicked="@cancel">Cancel</Button>
+            </ModalFooter>
+        </div>
+    </ModalContent>
+</Modal>
+
+
+<Modal @ref="modalAlert">
+    <ModalContent Size="ModalSize.Default" Centered="true">
+        <div style="background-color:lightsteelblue; border-radius: 10px;">
+            <ModalHeader style="    background-color:slateblue; color: white;font-size:small">
+                <ModalTitle>
+                    Alert
+                </ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+                <br>
+
+                <div class="mb-3 text-center">
+                    <span>@errorMessage</span>
+                </div>
+            </ModalBody>
+            <ModalFooter style="background-color:lightsteelblue;">
+                
+                <Button Color="Color.Warning" Outline Clicked="@cancel">OK</Button>
+            </ModalFooter>
+        </div>
+    </ModalContent>
+</Modal>
 
 
 @code {
@@ -197,6 +246,7 @@
     private bool showComfrimDelete = false;
 
     private int deleteId;
+    private int CarId;
     private int personId;
 
     private bool isEditMode = false;
@@ -204,6 +254,8 @@
     private Modal? modalAlertDelete = null!;
     private Modal? modalAddCar = null!;
     private Modal? modalAlertCarOwned = null!;
+    private Modal? modalServiceAlert = null!;
+    private Modal? modalAlert = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -265,7 +317,8 @@
         modalAlertDelete.Hide();
         modalAddCar.Hide();
         modalAlertCarOwned.Hide();
-
+        modalServiceAlert.Hide();
+        modalAlert.Hide();
     }
 
 
@@ -322,13 +375,55 @@
             else
             {
                 errorMessage = "there was an unexpected problem, please try later";
+                modalAlert.Show();
             }
         }
         else
         {
             errorMessage = "there was an unexpected problem, please try later"; 
+            modalAlert.Show();
         }
 
-        
+
+    }
+
+    private async void SendService(CarsViewModel viewModel)
+    {
+        var activeService = await SevicesSevice.GetActiveServiceAsync(viewModel.Id);
+        if(activeService is null)
+        {
+            Service service = new Service();
+            service.Car_id = viewModel.Id;
+            service.TotalPrice = 0;
+            CarId = service.Car_id;
+            var result = await SevicesSevice.AddServiceAsync(service);
+            if (result)
+            {
+                errorMessage = "The car was successfully sent to service, Do you want to see the details about this one or previous services? ";
+                modalServiceAlert.Show();
+            }
+            else
+            {
+                errorMessage = "there was an unexpected problem, please try later";
+                modalAlert.Show();
+            }
+        }
+        else
+        {
+            CarId = activeService.Car_id;
+            errorMessage = "The car that you are trying to send to service has already been sent, Do you want to see the details?";
+            modalServiceAlert.Show();
+
+        }
+    }
+
+    public void ServiceSent(CarsViewModel viewModel)
+    {
+        navigationManager.NavigateTo($"/Car-Services?CarId={viewModel.Id}");
+    }
+
+    public void ServiceSent()
+    {
+        navigationManager.NavigateTo($"/Car-Services?CarId={CarId}");
     }
 }

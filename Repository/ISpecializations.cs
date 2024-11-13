@@ -10,5 +10,6 @@ namespace Repository
     public interface ISpecializations
     {
         Task<IEnumerable<Specializations>> GetAllSpecializationsAsync();
+        Task<Specializations> GetByIdAsync(int id);
     }
 }

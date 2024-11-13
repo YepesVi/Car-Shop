@@ -60,7 +60,7 @@ namespace Repository
 
         public async Task<bool> UpdateAsync(Mechanic mechanic)
         {
-            var sql = "UPDATE Mecanic SET Specialization_id = @Specialization_id, CarCategory_id = @CarCategory_id" +
+            var sql = "UPDATE Mechanic SET Specialization_id = @Specialization_id, CarCategory_id = @CarCategory_id " +
                      "WHERE Id_Person = @Id_Person";
             var result = await _dbconnection.ExecuteAsync(sql, mechanic);
             return result > 0;

@@ -40,5 +40,9 @@ namespace CarShop.Service
             return await _IRoles.GetAllRolesAsync();
         }
 
+        public async Task<Specializations> GetByIdAsync(int id)
+        {
+            return await _ISpecializations.GetByIdAsync(id);
+        }
     }
 }

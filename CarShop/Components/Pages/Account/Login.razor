@@ -1,5 +1,6 @@
 ﻿@page "/login"
 
+
 @*rendermode InteractiveServer*@
 
 
@@ -11,6 +12,7 @@
 @using Microsoft.AspNetCore.Antiforgery
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
+@using BlazorCaptcha
 @inject IUserService userService
 @*inject CustomAuthStateProvider AuthStateProvider*@
 @inject NavigationManager navigationManager
@@ -40,7 +42,13 @@
                         <InputText @bind-Value="model.Password" type="password" class="form-control" placeholder="Password" />
                         <ValidationMessage For="() => model.Password" />
                     </div>
-
+                    <div class="mb-3 text-center">
+                           <label>Captcha</label>
+                     <Captcha @bind-CaptchaWord="@Captcha" CharNumber="@CaptchaLetters"  />
+                        <InputText @bind-Value="model.Captcha" class="form-control" placeholder="Captcha" />
+                        <ValidationMessage For="() => model.Captcha" />
+                    </div>
+                    <InputText @bind-Value="model.CaptchaCode" class="form-control" placeholder="Captcha" style="display: none;" />
                     <div class="mb-3 text-center">
                         <span class="text-danger">@errorMessage</span>
                     </div>
@@ -64,27 +72,46 @@
     [SupplyParameterFromForm]
     public LoginViewModel model { get; set; } = new();
 
+    private string Captcha = "";
+    private int CaptchaLetters = 3;
+
+    //  private bool isLoaded = false; 
+
     private string? errorMessage;
 
     private string? errorMessagen;
 
+    protected override Task OnInitializedAsync()
+    {
+        if (model.CaptchaCode is null)
+        {
+            RefreshCaptcha();
+        }
+        return base.OnInitializedAsync();
+    }
+
+    private async void validateCaptcha()
+    {
+        if (model.CaptchaCode == model.Captcha)
+        {
+            await Authenticate();
+        }
+        else
+        {
+            errorMessage = "The captcha that you provided is wrong, please try again.";
+        }
+    }
+    private void RefreshCaptcha()
+    {
+        Captcha = BlazorCaptcha.Tools.GetCaptchaWord(CaptchaLetters); // Genera un nuevo captcha
+        model.CaptchaCode = Captcha;
+
+        StateHasChanged(); // Actualiza la UI para reflejar el nuevo captcha
+    }
+
     private async Task Authenticate()
     {
-        //await AuthStateProvider.SignIn(model.Email, model.Password);
-
-
-
-
-        // navigationManager.NavigateTo("/cars", true);
-        /*        // Aquí obtienes el token de antifalsificación solo al hacer submit
-                                           string antiforgeryToken = antiforgery.GetAndStoreTokens(httpContextAccessor.HttpContext).RequestToken;
-                                           if (string.IsNullOrEmpty(antiforgeryToken))
-                                               {
-                                               errorMessage = "Antiforgery token is missing.";
-               return;
-               }
-
-               */
+ 
 
         var result = false;
         try

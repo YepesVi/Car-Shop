@@ -9,5 +9,7 @@ namespace CarShop.Service
         Task<IEnumerable<Specializations>> GetAllSpecializations();
 
         Task<IEnumerable<Roles>> GetAllRoles();
+
+        Task<Specializations> GetByIdAsync(int id);
     }
 }
